@@ -1,27 +1,41 @@
 const express = require("express");
-const axios = require("axios");
-const cheerio = require("cheerio");
+const puppeteer = require("puppeteer");
+const cors = require("cors");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(cors());
 
 app.get("/api/download", async (req, res) => {
   const query = req.query.query;
-  if (!query) return res.status(400).json({ error: "Missing query parameter" });
+  if (!query) return res.status(400).json({ error: "No query provided." });
 
   try {
-    const response = await axios.get(`https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`);
-    const $ = cheerio.load(response.data);
-    const matches = $("img").map((i, el) => $(el).attr("src")).get().filter(x => x?.includes("pinimg"));
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+    const page = await browser.newPage();
+    await page.goto(`https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`, { waitUntil: "networkidle2" });
 
-    if (matches.length === 0) return res.status(404).json({ error: "No pins found." });
+    const imageUrl = await page.evaluate(() => {
+      const imgs = document.querySelectorAll("img");
+      for (let img of imgs) {
+        if (img.src.includes("pinimg")) return img.src;
+      }
+      return null;
+    });
 
-    return res.json({ type: "image", url: matches[0] });
+    await browser.close();
+
+    if (!imageUrl) return res.status(404).json({ error: "No image found." });
+
+    return res.json({ type: "image", url: imageUrl });
   } catch (err) {
-    return res.status(500).json({ error: "Failed to fetch media" });
+    console.error(err);
+    return res.status(500).json({ error: "Failed to fetch image." });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`API running on port ${PORT}`);
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Pinterest API is running...");
 });
