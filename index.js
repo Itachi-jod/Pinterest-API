@@ -1,29 +1,42 @@
 const express = require("express");
 const axios = require("axios");
+const cheerio = require("cheerio");
+const qs = require("qs");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const RAPIDAPI_HOST = "pinterest-scraper5.p.rapidapi.com";
-const RAPIDAPI_KEY = "3641222daamsh414c9dca6784a8ep1f9b60jsn92b32450ebbf";
-
-app.get("/api/followings", async (req, res) => {
-  const username = req.query.username;
-  if (!username) return res.status(400).json({ error: "Missing username" });
+app.get("/api/download", async (req, res) => {
+  const pinterestUrl = req.query.url;
+  if (!pinterestUrl) return res.status(400).json({ error: "Missing URL" });
 
   try {
-    const response = await axios.get(
-      `https://${RAPIDAPI_HOST}/api/users/followings?username=${username}`,
-      {
-        headers: {
-          "x-rapidapi-host": RAPIDAPI_HOST,
-          "x-rapidapi-key": RAPIDAPI_KEY,
-        },
-      }
-    );
-    res.json(response.data);
-  } catch (error) {
-    console.error("Pinterest API error:", error.message);
-    res.status(500).json({ error: "Failed to fetch data from Pinterest" });
+    const form = qs.stringify({ url: pinterestUrl });
+
+    const response = await axios.post("https://indown.io/download/", form, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Mozilla/5.0",
+      },
+    });
+
+    const $ = cheerio.load(response.data);
+    const media = [];
+
+    $("a.downloadbtn").each((i, el) => {
+      const link = $(el).attr("href");
+      const type = link.includes(".mp4") ? "video" : "image";
+      media.push({ type, url: link });
+    });
+
+    if (media.length === 0) {
+      return res.status(404).json({ error: "No media found" });
+    }
+
+    res.json({ success: true, media });
+  } catch (err) {
+    console.error("Pinterest scrape error:", err.message);
+    res.status(500).json({ error: "Failed to fetch media" });
   }
 });
 
