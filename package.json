@@ -1,13 +1,10 @@
 {
-  "name": "google-text-to-speech-example",
+  "name": "tts-api",
   "version": "1.0.0",
-  "description": "Google Cloud Text-to-Speech simple example",
   "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
+  "license": "MIT",
   "dependencies": {
-    "@google-cloud/text-to-speech": "^4.4.2"
-  },
-  "license": "MIT"
+    "@google-cloud/text-to-speech": "^5.2.0",
+    "express": "^4.18.2"
+  }
 }
