@@ -1,12 +1,15 @@
 {
   "name": "pinterest-image-api",
   "version": "1.0.0",
-  "description": "Fetch Pinterest images by query",
+  "description": "Pinterest image fetcher",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js"
   },
+  "keywords": ["pinterest", "image", "api", "puppeteer", "scraper"],
+  "author": "Lord Itachi",
+  "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
