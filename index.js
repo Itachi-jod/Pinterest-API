@@ -1,14 +1,18 @@
-const fs = require("fs");
-const path = require("path");
-const textToSpeech = require("@google-cloud/text-to-speech");
+import express from "express";
+import textToSpeech from "@google-cloud/text-to-speech";
+import fs from "fs";
+import util from "util";
 
-// Create client with your service account key JSON file path
-const client = new textToSpeech.TextToSpeechClient({
-  keyFilename: path.join(__dirname, "service-account.json"),
-});
+const app = express();
+const client = new textToSpeech.TextToSpeechClient();
 
-async function convertTextToSpeech(text) {
+app.use(express.json());
+
+app.post("/tts", async (req, res) => {
   try {
+    const text = req.body.text;
+    if (!text) return res.status(400).json({ error: "Missing text" });
+
     const request = {
       input: { text },
       voice: { languageCode: "en-US", ssmlGender: "NEUTRAL" },
@@ -16,15 +20,19 @@ async function convertTextToSpeech(text) {
     };
 
     const [response] = await client.synthesizeSpeech(request);
+    const audioContent = response.audioContent;
 
-    const outputFile = path.join(__dirname, "output.mp3");
-    fs.writeFileSync(outputFile, response.audioContent, "binary");
-    console.log(`Audio content written to file: ${outputFile}`);
+    res.set({
+      "Content-Type": "audio/mpeg",
+      "Content-Disposition": `attachment; filename="output.mp3"`,
+    });
+
+    res.send(audioContent);
   } catch (error) {
-    console.error("Error:", error);
+    console.error(error);
+    res.status(500).json({ error: "TTS failed" });
   }
-}
+});
 
-// Example usage
-const text = process.argv.slice(2).join(" ") || "Hello, this is a test from ChatGPT!";
-convertTextToSpeech(text);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
