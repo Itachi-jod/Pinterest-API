@@ -1,47 +1,41 @@
-const axios = require("axios");
+const express = require("express");
 const googleTTS = require("google-tts-api");
+const axios = require("axios");
 
-module.exports = {
-  config: {
-    name: "tts",
-    aliases: ["text2voice", "say"],
-    version: "1.0.0",
-    author: "Lord Itachi",
-    role: 0,
-    countDown: 5,
-    shortDescription: { en: "Convert text to voice" },
-    category: "audio",
-    guide: { en: "{prefix}tts <text>" }
-  },
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-  onStart: async function({ api, event, args }) {
-    if (!args.length) {
-      return api.sendMessage("Please provide the text to convert to voice.", event.threadID, event.messageID);
-    }
+app.get("/", (req, res) => {
+  res.send("Text to Voice API is running!");
+});
 
-    const text = args.join(" ");
+app.get("/api/tts", async (req, res) => {
+  const text = req.query.text;
 
-    try {
-      const url = googleTTS.getAudioUrl(text, {
-        lang: "en",
-        slow: false,
-        host: "https://translate.google.com"
-      });
-
-      const response = await axios.get(url, { responseType: "arraybuffer" });
-      const audioBuffer = Buffer.from(response.data, "binary");
-
-      await api.sendMessage(
-        {
-          body: `Here is the voice for: "${text}"`,
-          attachment: audioBuffer
-        },
-        event.threadID,
-        event.messageID
-      );
-    } catch (error) {
-      console.error(error);
-      api.sendMessage("❌ Failed to convert text to voice.", event.threadID, event.messageID);
-    }
+  if (!text) {
+    return res.status(400).json({ error: "Missing 'text' query parameter." });
   }
-};
+
+  try {
+    const url = googleTTS.getAudioUrl(text, {
+      lang: "en",
+      slow: false,
+      host: "https://translate.google.com"
+    });
+
+    const response = await axios.get(url, { responseType: "arraybuffer" });
+
+    res.set({
+      "Content-Type": "audio/mpeg",
+      "Content-Disposition": `inline; filename="voice.mp3"`
+    });
+    res.send(response.data);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Failed to convert text to voice." });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
