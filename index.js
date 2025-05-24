@@ -17,15 +17,18 @@ app.get("/api/download", async (req, res) => {
 
     const page = await browser.newPage();
     await page.goto(`https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`, {
-      waitUntil: "networkidle2"
+      waitUntil: "networkidle2",
+      timeout: 60000
     });
 
+    // Wait for images to load
+    await page.waitForSelector('img[src*="pinimg"]', { timeout: 15000 });
+
+    // Get first valid Pinterest image
     const imageUrl = await page.evaluate(() => {
-      const imgs = document.querySelectorAll("img");
-      for (let img of imgs) {
-        if (img.src.includes("pinimg")) return img.src;
-      }
-      return null;
+      const imgs = Array.from(document.querySelectorAll('img')).map(i => i.src);
+      const pinImgs = imgs.filter(url => url.includes("pinimg.com") && !url.includes("data:"));
+      return pinImgs.length > 0 ? pinImgs[0] : null;
     });
 
     await browser.close();
@@ -33,12 +36,14 @@ app.get("/api/download", async (req, res) => {
     if (!imageUrl) return res.status(404).json({ error: "No image found." });
 
     res.json({ type: "image", url: imageUrl });
+
   } catch (err) {
-    console.error(err);
+    console.error("Error scraping Pinterest:", err.message);
     res.status(500).json({ error: "Failed to fetch image." });
   }
 });
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Pinterest API is running...");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Pinterest API running on port ${PORT}`);
 });
