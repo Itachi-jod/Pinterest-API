@@ -1,18 +1,13 @@
 {
-  "name": "pinterest-image-api",
+  "name": "google-text-to-speech-example",
   "version": "1.0.0",
-  "description": "Pinterest image fetcher",
+  "description": "Google Cloud Text-to-Speech simple example",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": ["pinterest", "image", "api", "puppeteer", "scraper"],
-  "author": "Lord Itachi",
-  "license": "MIT",
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "puppeteer": "^22.8.2"
-  }
+    "@google-cloud/text-to-speech": "^4.4.2"
+  },
+  "license": "MIT"
 }
