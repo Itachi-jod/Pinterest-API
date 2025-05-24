@@ -1,5 +1,5 @@
 {
-  "name": "pinterest-image-api",
+  "name": "pinterest-api",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -8,6 +8,7 @@
   "dependencies": {
     "axios": "^1.6.8",
     "cheerio": "^1.0.0-rc.12",
+    "cors": "^2.8.5",
     "express": "^4.18.2",
     "qs": "^6.12.0"
   }
