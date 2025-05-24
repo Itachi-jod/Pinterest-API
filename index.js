@@ -1,46 +1,39 @@
 const express = require('express');
 const axios = require('axios');
-const cheerio = require('cheerio');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(cors());
 
 app.get('/api/download', async (req, res) => {
-  let { url } = req.query;
-  if (!url) return res.json({ error: 'Missing URL' });
-
-  // Resolve shortened URLs
-  try {
-    const response = await axios.get(url, { maxRedirects: 5 });
-    url = response.request.res.responseUrl;
-  } catch (e) {
-    return res.json({ error: 'Failed to resolve URL' });
+  const { query } = req.query;
+  if (!query) {
+    return res.status(400).json({ error: 'Missing search query.' });
   }
 
   try {
-    const { data } = await axios.get(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
+    const response = await axios.get(`https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0'
+      }
     });
-    const $ = cheerio.load(data);
 
-    const metaVideo = $('meta[property="og:video"]').attr('content');
-    const metaImage = $('meta[property="og:image"]').attr('content');
-
-    if (metaVideo) {
-      return res.json({ type: 'video', url: metaVideo });
-    } else if (metaImage) {
-      return res.json({ type: 'image', url: metaImage });
+    const html = response.data;
+    const match = html.match(/"url":"(https:\/\/i\.pinimg\.com[^"]+)"/);
+    
+    if (match && match[1]) {
+      const imageUrl = match[1].replace(/\\u002F/g, '/');
+      return res.json({ type: 'image', url: imageUrl });
     } else {
-      return res.json({ error: 'No media found on page' });
+      return res.status(404).json({ error: 'No image found.' });
     }
   } catch (err) {
-    return res.json({ error: 'Failed to fetch media' });
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch image.' });
   }
 });
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Pinterest downloader running on port ${PORT}`);
+  console.log(`Pinterest image API is running on port ${PORT}`);
 });
