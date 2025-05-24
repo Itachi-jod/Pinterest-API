@@ -1,6 +1,7 @@
 {
   "name": "pinterest-image-api",
   "version": "1.0.0",
+  "description": "Fetch Pinterest images by query",
   "main": "index.js",
   "type": "module",
   "scripts": {
