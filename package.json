@@ -1,7 +1,7 @@
 {
-  "name": "pinterest-scraper-api",
+  "name": "pinterest-image-api",
   "version": "1.0.0",
-  "description": "Simple Pinterest image search scraper API using Puppeteer and Express",
+  "description": "Pinterest Image Scraper API using Puppeteer and Express",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -11,6 +11,6 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "puppeteer": "^20.8.1"
+    "puppeteer": "^23.3.0"
   }
 }
