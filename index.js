@@ -1,49 +1,57 @@
 const express = require('express');
-const axios = require('axios');
+const puppeteer = require('puppeteer');
 const cors = require('cors');
 
 const app = express();
 app.use(cors());
 
-app.get('/api/download', async (req, res) => {
-  const { query } = req.query;
-  if (!query) return res.status(400).json({ error: 'Missing search query.' });
+app.get('/search', async (req, res) => {
+  const query = req.query.q;
+  if (!query) {
+    return res.status(400).json({ error: "Missing query parameter 'q'" });
+  }
 
+  let browser;
   try {
-    const response = await axios.get(`https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'Accept-Language': 'en-US,en;q=0.9',
-      }
+    browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'], // For some hosting environments
+    });
+    const page = await browser.newPage();
+
+    // Go to Pinterest search page for the query
+    await page.goto(`https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`, {
+      waitUntil: 'networkidle2',
     });
 
-    const html = response.data;
+    // Wait for images to load
+    await page.waitForSelector('img[srcset]', { timeout: 15000 });
 
-    // Pinterest embeds initial state in <script> tag as JSON, extract it:
-    const jsonDataMatch = html.match(/<script id="__PWS_DATA__" type="application\/json">(.*?)<\/script>/);
-    if (!jsonDataMatch) return res.status(404).json({ error: 'No data found in page.' });
+    // Extract image URLs
+    const images = await page.evaluate(() => {
+      // Select all images with srcset attribute
+      const imgElements = Array.from(document.querySelectorAll('img[srcset]'));
+      // Extract src attribute from each img
+      const urls = imgElements.map(img => img.src);
+      // Remove duplicates and get first 10
+      return [...new Set(urls)].slice(0, 10);
+    });
 
-    const jsonData = JSON.parse(jsonDataMatch[1]);
-    const pins = jsonData?.props?.initialReduxState?.pins || {};
-
-    // pins is an object with pin IDs as keys, values have images property
-    const pinEntries = Object.values(pins);
-    if (!pinEntries.length) return res.status(404).json({ error: 'No pins found.' });
-
-    // Pick the first pin's images.orig.url as the image URL
-    for (const pin of pinEntries) {
-      if (pin?.images?.orig?.url) {
-        return res.json({ type: 'image', url: pin.images.orig.url });
-      }
+    if (!images.length) {
+      return res.json({ error: "No pins found." });
     }
 
-    return res.status(404).json({ error: 'No image URL found in pins.' });
-
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Failed to fetch image.' });
+    res.json({ pins: images });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to scrape Pinterest." });
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Pinterest Scraper API running on port ${PORT}`);
+});
