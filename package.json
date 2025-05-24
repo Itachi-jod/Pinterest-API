@@ -1,7 +1,6 @@
 {
   "name": "pinterest-downloader-api",
   "version": "1.0.0",
-  "description": "Pinterest media downloader using indown.io",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -11,10 +10,5 @@
     "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
     "express": "^4.19.2"
-  },
-  "engines": {
-    "node": ">=14"
-  },
-  "author": "Lord Itachi",
-  "license": "MIT"
+  }
 }
