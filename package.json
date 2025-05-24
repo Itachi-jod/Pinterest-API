@@ -1,11 +1,13 @@
 {
   "name": "pinterest-image-api",
   "version": "1.0.0",
-  "description": "Pinterest image fetcher API by search query",
+  "description": "Pinterest image fetcher by search query",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
+  "author": "Lord Itachi",
+  "license": "MIT",
   "dependencies": {
     "axios": "^1.6.0",
     "cors": "^2.8.5",
